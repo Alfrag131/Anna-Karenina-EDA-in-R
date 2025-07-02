@@ -1,5 +1,4 @@
 
-# ── Библиотеки ─────────────────────────────────────────────────────────
 library(stringr)
 library(dplyr)
 library(tidyr)
@@ -8,7 +7,6 @@ library(forcats)
 library(ggplot2)
 library(patchwork)
 
-# ── 1. Загрузка и первичная очистка текста ─────────────────────────────
 url_txt <- "https://raw.githubusercontent.com/WillKoehrsen/deep-learning-v2-pytorch/master/recurrent-neural-networks/char-rnn/data/anna.txt"
 
 text_clean <- readLines(url_txt, encoding = "UTF-8") |>
@@ -19,7 +17,6 @@ text_clean <- readLines(url_txt, encoding = "UTF-8") |>
   str_replace_all("\\s+", " ") |>
   str_trim()
 
-# ── 2. Нормализация вариантов имён ─────────────────────────────────────
 replacements <- c(
   # Имена
   "sergey" = "sergey",
@@ -57,7 +54,6 @@ normalize_text <- function(txt, dict) {
 
 text_norm <- normalize_text(text_clean, replacements)
 
-# ── 3. Делаем 10 равных кусков текста ──────────────────────────────────
 split_parts <- function(txt, n = 10) {
   words <- str_split(txt, "\\s+")[[1]]
   size  <- ceiling(length(words) / n)
@@ -68,7 +64,6 @@ split_parts <- function(txt, n = 10) {
 text_parts   <- split_parts(text_norm, 10)
 part_lengths <- sapply(text_parts, \(x) str_count(x, "\\S+"))  # число слов
 
-# ── 4. Словарь героев ──────────────────────────────────────────────────
 character_map <- list(
   "Anna Arkadyevna Karenina" = c("anna arkadyevna", "anna karenina", "anna", "karenina"),
   "Alexey Alexandrovitch Karenin" = c("alexey alexandrovitch", "alexey karenin", "karenin"),
@@ -81,7 +76,8 @@ character_map <- list(
   "Nicolay Dmitrievitch Levin" = c("nicolay dmitrievitch", "nicolay levin"),
   "Sergey Ivanovitch Koznyshev" = c("sergey ivanovitch", "sergey koznyshev", "koznyshev")
 )
-# ── 5. Подсчёт частот ─────────────────────────────────────────────────
+
+
 get_freq <- function(txt, variants) {
   pattern <- paste0("\\b(", str_c(variants, collapse = "|"), ")\\b")
   str_count(txt, regex(pattern))
@@ -100,8 +96,6 @@ hero_freq <- map_dfr(seq_along(text_parts), \(p) {
   mutate(norm = freq / part_lengths[part] * 1000)  # на 1 000 слов
 
 
-
-# ── 7. Тепловая карта всех героев ─────────────────────────────────────
 heatmap_plot <- ggplot(hero_freq,
                        aes(part, fct_rev(hero), fill = norm)) +
   geom_tile(colour = "white") +
@@ -115,8 +109,4 @@ heatmap_plot <- ggplot(hero_freq,
   ) +
   theme_minimal()
 
-# ── 8. Вывод ───────────────────────────────────────────────────────────
 print(heatmap_plot)
-
-# ggsave("pair_plots.png", pair_grid, width = 10, height = 12, dpi = 300)
-# ggsave("heatmap.png", heatmap_plot, width = 8, height = 6, dpi = 300)
