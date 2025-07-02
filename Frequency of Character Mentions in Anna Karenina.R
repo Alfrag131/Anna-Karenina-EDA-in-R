@@ -2,19 +2,15 @@ library(stringr)
 library(dplyr)
 library(ggplot2)
 
-# --- Загружаем текст ---
 text <- readLines("https://raw.githubusercontent.com/WillKoehrsen/deep-learning-v2-pytorch/master/recurrent-neural-networks/char-rnn/data/anna.txt", encoding = "UTF-8")
 
-# --- Обрабатываем текст ---
 text_joined <- tolower(paste(text, collapse = " "))
 text_joined <- str_replace_all(text_joined, "[[:punct:]]", "")
 text_joined <- str_replace_all(text_joined, "[[:digit:]]", "")
 text_joined <- str_replace_all(text_joined, "\\s+", " ")
 text_joined <- str_trim(text_joined)
 
-# --- Словарь нормализации имён и отчеств ---
 replacements <- c(
-  # Имена
   "sergey" = "sergey",
   "sergei" = "sergey",
   "alexei" = "alexey",
@@ -27,7 +23,6 @@ replacements <- c(
   "dolly" = "darya",
   "kitty" = "katerina",
   
-  # Отчества
   "arkadyevna" = "arkadyevna",
   "alexandrovitch" = "alexandrovitch",
   "alexyevitch" = "alexeyevitch",
@@ -47,10 +42,8 @@ normalize_text <- function(text, replacements) {
   return(text)
 }
 
-# --- Применяем нормализацию ---
 text_joined <- normalize_text(text_joined, replacements)
 
-# --- Список героев с нормализованными вариантами ---
 character_map <- list(
   "Anna Arkadyevna Karenina" = c("anna arkadyevna", "anna karenina", "anna", "karenina"),
   "Alexey Alexandrovitch Karenin" = c("alexey alexandrovitch", "alexey karenin", "karenin"),
@@ -64,7 +57,6 @@ character_map <- list(
   "Sergey Ivanovitch Koznyshev" = c("sergey ivanovitch", "sergey koznyshev", "koznyshev")
 )
 
-# --- Подсчитываем частоту упоминаний героев ---
 hero_freq <- data.frame(hero = names(character_map), freq = 0)
 
 for (hero in names(character_map)) {
@@ -77,7 +69,6 @@ for (hero in names(character_map)) {
 
 hero_freq <- hero_freq %>% arrange(desc(freq))
 
-# --- Строим график ---
 ggplot(hero_freq, aes(x = reorder(hero, -freq), y = freq)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(title = "Frequency of Character Mentions in Anna Karenina",
