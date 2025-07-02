@@ -1,13 +1,7 @@
-############################################################
-#  Anna Karenina · co-mention network  --  full R script  #
-############################################################
 
-## ── 1. Библиотеки ─────────────────────────────────────────
-# install.packages(c("dplyr","stringr","purrr","igraph","ggraph","tidyr"))
 library(dplyr); library(stringr); library(purrr)
 library(igraph); library(ggraph); library(tidyr)
 
-## ── 2. Загрузка и базовая очистка текста ─────────────────
 url <- "https://raw.githubusercontent.com/WillKoehrsen/deep-learning-v2-pytorch/master/recurrent-neural-networks/char-rnn/data/anna.txt"
 text_clean <- readLines(url, encoding = "UTF-8") |>
   tolower()                                  |>
@@ -16,7 +10,6 @@ text_clean <- readLines(url, encoding = "UTF-8") |>
   str_replace_all("\\s+", " ")               |>
   str_trim()
 
-## ── 3. Нормализация вариантов имён (Sergei → Sergey и т.п.) ─
 replacements <- c(
   "sergei"="sergey", "aleksei"="alexey", "aleksey"="alexey",
   "nikolai"="nicolay", "kostya"="konstantin", "stiva"="stepan",
@@ -30,7 +23,6 @@ normalize <- function(txt, dict){
 }
 text_clean <- normalize(text_clean, replacements)
 
-## ── 4. Карта персонажей ──────────────────────────────────
 character_map <- list(
   Anna      = c("anna arkadyevna","anna karenina","anna","karenina"),
   Vronsky   = c("alexey kirillovitch","alexey vronsky","vronsky","aliosha"),
@@ -43,13 +35,13 @@ character_map <- list(
   Sergey    = c("sergey ivanovitch","koznyshev")
 )
 
-## ── 5. Разбивка на окна по 300 слов ───────────────────────
+# Разбивка на окна по 300 слов
 words     <- str_split(text_clean, "\\s+")[[1]]
 win_size  <- 300
 chunks    <- split(words, ceiling(seq_along(words)/win_size)) |>
   map_chr(paste, collapse = " ")
 
-## ── 6. Какие герои упомянуты в каждом окне ───────────────
+# Какие герои упомянуты в каждом окне
 mentions <- map(chunks, \(chunk){
   keep(names(character_map), \(hero){
     any(str_detect(chunk,
@@ -57,7 +49,7 @@ mentions <- map(chunks, \(chunk){
   })
 })
 
-## ── 7. Матрица ко-упоминаний ──────────────────────────────
+# Матрица ко-упоминаний
 heroes  <- names(character_map)
 co_mat  <- matrix(0, length(heroes), length(heroes), dimnames=list(heroes,heroes))
 walk(mentions, \(m){
@@ -67,12 +59,12 @@ walk(mentions, \(m){
 })
 co_mat <- co_mat + t(co_mat)   # симметрия
 
-## ── 8. Граф: фильтр рёбер (<5) и узлов (degree<2) ─────────
+# Граф: фильтр рёбер (<5) и узлов (degree<2)
 g <- graph_from_adjacency_matrix(co_mat, "undirected", weighted=TRUE, diag=FALSE)
 g <- delete_edges(g, E(g)[weight < 5])
 g <- delete_vertices(g, V(g)[degree(g) < 2])     # убираем редко связанных
 
-## ── 9. Группы (сюжетные линии) и палитры ──────────────────
+# Группы (сюжетные линии) и палитры
 V(g)$group <- case_when(
   V(g)$name %in% c("Anna","Vronsky","Karenin")           ~ "Anna arc",
   V(g)$name %in% c("Levin","Kitty","Nicolay","Sergey")   ~ "Levin arc",
@@ -84,7 +76,6 @@ node_pal <- c("Anna arc"="#d72638",
               "Oblonskys"="#f4a259",
               "Other"="gray70")
 
-## ── 10. Окрашиваем рёбра: внутрикластерные = цвет кластера ─
 edge_grp <- apply(ends(g, E(g)), 1, function(e) {
   g1 <- V(g)$group[e[1]]
   g2 <- V(g)$group[e[2]]
@@ -93,7 +84,7 @@ edge_grp <- apply(ends(g, E(g)), 1, function(e) {
 E(g)$e_grp <- edge_grp
 edge_pal <- c(node_pal, Inter="gray80")
 
-## ── 11. Визуализация ─────────────────────────────────────
+
 set.seed(42)
 ggraph(g, layout="fr") +
   geom_edge_link(aes(width=weight, colour=e_grp), alpha=.8) +
