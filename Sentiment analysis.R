@@ -5,7 +5,7 @@ library(stringr)
 library(zoo)
 library(tidyr)
 
-# 1. Чтение и очистка текста
+# Чтение и очистка текста
 url  <- "https://raw.githubusercontent.com/WillKoehrsen/deep-learning-v2-pytorch/master/recurrent-neural-networks/char-rnn/data/anna.txt"
 text <- readLines(url, encoding = "UTF-8")
 text_clean <- text |>
@@ -16,17 +16,17 @@ text_clean <- text |>
   str_replace_all("\\s+", " ") |>
   str_trim()
 
-# 2. Разбивка на слова
+# Разбивка на слова
 words <- tibble(word = unlist(str_split(text_clean, "\\s+")))
 
-# 3. Сентимент слов (Bing)
+# Сентимент слов (Bing)
 bing_lexicon <- get_sentiments("bing")
 words_sentiment <- words %>%
   inner_join(bing_lexicon, by = "word") %>%
   mutate(sentiment_value = ifelse(sentiment == "positive", 1, -1),
          index           = row_number())
 
-# 4. Скользящие средние
+# Скользящие средние
 window_size1 <- 200
 window_size2 <- 2000
 
@@ -37,7 +37,7 @@ words_sentiment <- words_sentiment %>%
     roll_2000 = zoo::rollmean(sentiment_value, k = window_size2, fill = NA)
   )
 
-# 5. Длинный формат
+# Длинный формат
 df_plot <- words_sentiment %>%
   select(index, roll_200, roll_2000) %>%
   pivot_longer(cols = starts_with("roll_"),
@@ -48,7 +48,7 @@ df_plot <- words_sentiment %>%
                          "roll_200"  = "Window = 200 words",
                          "roll_2000" = "Window = 2000 words"))
 
-# 6. График
+# График
 ggplot(df_plot, aes(x = index, y = sentiment, color = window)) +
   geom_line(linewidth = 1) +
   scale_color_manual(values = c("Window = 200 words"  = "orange",
